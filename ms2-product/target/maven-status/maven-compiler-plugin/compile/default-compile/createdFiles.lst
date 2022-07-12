@@ -1,0 +1,4 @@
+com\ms2\ms2product\Ms2ProductApplication.class
+com\ms2\ms2product\controller\productC.class
+com\ms2\ms2product\model\product.class
+com\ms2\ms2product\repository\repository.class
