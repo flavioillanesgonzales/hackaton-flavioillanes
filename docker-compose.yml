@@ -1,0 +1,102 @@
+version: '3.1'
+services:
+  app:
+    container_name: app-ms1-user
+    image: app-ms1-user
+    build: ./ms1-user
+    ports:
+      - "9192:9192"
+    depends_on:
+      - dbpostgresql
+  app2:
+    container_name: app-ms2-product
+    image: app-ms2-product
+    build: ./ms2-product
+    ports:
+      - "9091:9091"
+    depends_on:
+      - dbpostgresql
+
+  dbpostgresql:
+    image: postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=dbhack
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:6.2.2
+    container_name: elasticsearch
+    environment:
+      - cluster.name=docker-cluster
+      - bootstrap.memory_lock=true
+      - xpack.security.enabled=false
+    volumes:
+      - esdata1:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:6.2.2
+    container_name: logstash
+    command: logstash -f /etc/logstash/conf.d/logstash.conf
+    volumes:
+      - ./config:/etc/logstash/conf.d
+    ports:
+      - "5000:5000"
+    links:
+      - elasticsearch
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:6.2.2
+    container_name: kibana
+    environment:
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+    ports:
+      - "5601:5601"
+    links:
+      - elasticsearch
+
+  prometheus:
+        container_name: "prometheus"
+        image: prom/prometheus:v2.31.1
+        volumes:
+            - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+            - prometheus_data:/prometheus
+        command:
+            - '--config.file=/etc/prometheus/prometheus.yml'
+            - '--storage.tsdb.path=/prometheus'
+            - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+            - '--web.console.templates=/usr/share/prometheus/consoles'
+            - '--storage.tsdb.retention.time=5d'
+        ports:
+            - 9090:9090
+
+  grafana:
+        container_name: "grafana"
+        image: grafana/grafana:8.2.5
+        #environment:
+           # GF_INSTALL_PLUGINS: 'grafana-clock-panel,grafana-simple-json-datasource'
+        volumes:
+            - grafana_data:/var/lib/grafana
+            - ./grafana/provisioning/:/etc/grafana/provisioning/
+            - ./grafana/dashboards/:/etc/grafana/dashboards/
+        ports:
+            - 3000:3000
+        depends_on:
+            - prometheus
+    
+
+volumes:
+  esdata1:
+    driver: local
+  elasticsearch: null
+  prometheus_data: null
+  grafana_data: null
