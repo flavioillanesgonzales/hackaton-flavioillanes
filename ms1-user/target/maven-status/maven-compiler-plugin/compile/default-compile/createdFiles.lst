@@ -1,0 +1,4 @@
+com\ms1\ms1user\Ms1UserApplication.class
+com\ms1\ms1user\model\user.class
+com\ms1\ms1user\controller\userC.class
+com\ms1\ms1user\repository\repository.class
